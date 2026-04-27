@@ -48,7 +48,7 @@
   }
   .nav-btn:hover { background: var(--surface2); color: var(--text); }
   .nav-btn.active { background: var(--surface2); color: var(--accent); }
-
+        
   /* LAYOUT */
   .layout { display: grid; grid-template-columns: 280px 1fr; height: calc(100vh - 56px); }
   .sidebar { background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; }
@@ -69,7 +69,25 @@
   .rule-text { font-size: 11px; color: var(--text2); line-height: 1.5; }
   .rule-edit { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 10px; margin-left: auto; padding: 2px 4px; }
   .rule-edit:hover { color: var(--accent); }
-
+  
+  /* TOGGLE SWITCH */
+  .toggle-wrap { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .toggle { position: relative; width: 32px; height: 18px; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-track {
+    position: absolute; inset: 0; border-radius: 18px;
+    background: var(--border2); cursor: pointer; transition: background 0.2s;
+  }
+  .toggle-track:before {
+    content: ''; position: absolute; width: 12px; height: 12px;
+    left: 3px; top: 3px; border-radius: 50%; background: var(--text3);
+    transition: transform 0.2s, background 0.2s;
+  }
+  .toggle input:checked + .toggle-track { background: rgba(0,212,170,0.3); }
+  .toggle input:checked + .toggle-track:before { transform: translateX(14px); background: var(--accent); }
+  .toggle-label { font-size: 10px; color: var(--text3); min-width: 24px; font-family: var(--mono); }
+  .rule-disabled { opacity: 0.4; }
+  
   /* FIELD BUILDER */
   .field-item {
     background: var(--surface2); border: 1px solid var(--border);
@@ -539,10 +557,10 @@ let fields = [
 ];
 
 let rules = [
-  { id: 1, name: 'Sin acentos ni ñ', type: 'no_special', severity: 'error' },
-  { id: 2, name: 'Todo en mayúsculas', type: 'uppercase', severity: 'error' },
-  { id: 3, name: 'Sin espacios dobles', type: 'no_double_space', severity: 'warn' },
-  { id: 4, name: 'Máximo 40 caracteres', type: 'max_chars', extra: '40', severity: 'error' },
+  { id: 1, name: 'Sin acentos ni ñ', type: 'no_special', severity: 'error', enabled: true },
+  { id: 2, name: 'Todo en mayúsculas', type: 'uppercase', severity: 'error', enabled: true },
+  { id: 3, name: 'Sin espacios dobles', type: 'no_double_space', severity: 'warn', enabled: true },
+  { id: 4, name: 'Máximo 40 caracteres', type: 'max_chars', extra: '40', severity: 'error', enabled: true },
 ];
 
 let abbreviations = [
@@ -563,8 +581,29 @@ let suggestion = '';
 
 // ─── INIT ─────────────────────────────────────────────────────
 window.onload = () => {
+  loadRuleStates();
   renderAll();
 };
+
+function loadRuleStates() {
+  const saved = localStorage.getItem('sap_rule_states');
+  if (!saved) return;
+  try {
+    const states = JSON.parse(saved);
+    rules.forEach(r => { if (states[r.id] !== undefined) r.enabled = states[r.id]; });
+  } catch(e) {}
+}
+
+function saveRuleStates() {
+  const states = {};
+  rules.forEach(r => states[r.id] = r.enabled);
+  localStorage.setItem('sap_rule_states', JSON.stringify(states));
+}
+
+function toggleRule(id) {
+  const r = rules.find(r => r.id === id);
+  if (r) { r.enabled = !r.enabled; saveRuleStates(); renderRules(); renderFields(); }
+}
 
 function renderAll() {
   renderFields();
@@ -926,6 +965,13 @@ function renderRules() {
       <div style="flex:1">
         <div style="font-size:13px;font-weight:500;color:var(--text)">${r.name}</div>
         <div style="font-size:11px;color:var(--text3);margin-top:2px">${r.type}${r.extra ? ' · ' + r.extra : ''} · ${r.severity === 'error' ? 'Error' : 'Advertencia'}</div>
+      </div>
+     <div class="toggle-wrap">
+        <label class="toggle">
+          <input type="checkbox" ${r.enabled ? 'checked' : ''} onchange="toggleRule(${r.id})">
+          <span class="toggle-track"></span>
+        </label>
+        <span class="toggle-label">${r.enabled ? 'ON' : 'OFF'}</span>
       </div>
       <button class="btn btn-danger" style="font-size:11px;padding:5px 10px;" onclick="deleteRule(${i})">Eliminar</button>
     </div>
