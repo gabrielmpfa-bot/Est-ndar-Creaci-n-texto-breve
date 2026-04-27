@@ -641,8 +641,8 @@ function renderFields() {
       <span style="font-family:var(--mono);font-size:9px;color:${r.enabled ? 'var(--accent)' : 'var(--text3)'};">${r.enabled ? 'ON' : 'OFF'}</span>
     </div>
   `).join('');
+}
 
-// ─── CREATOR ──────────────────────────────────────────────────
 function renderCreatorFields() {
   const container = document.getElementById('creator-fields');
   container.innerHTML = fields.map((f, i) => `
